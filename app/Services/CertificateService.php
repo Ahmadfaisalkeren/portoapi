@@ -34,13 +34,13 @@ class CertificateService
 
     public function updateCertificate($certificateId, array $certificateData)
     {
-        $certificate = Certificate::find($certificateId);
+        $certificate = Certificate::findOrFail($certificateId);
 
-        $certificate['title'] = $certificateData['title'] ?? $certificate->title;
-        $certificate['year'] = $certificateData['year'] ?? $certificate->year;
+        $certificate->title = $certificateData['title'] ?? $certificate->title;
+        $certificate->year = $certificateData['year'] ?? $certificate->year;
 
         if (isset($certificateData['image'])) {
-            $certificateData['image'] = $this->updateImage($certificate, $certificateData['image']);
+            $certificate->image = $this->updateImage($certificate, $certificateData['image']);
         }
 
         $certificate->save();
@@ -55,16 +55,18 @@ class CertificateService
             $imagePath = $image->storeAs('images/certificates', $imageName, 'public');
 
             if ($certificate->image) {
-                Storage::delete('public/' . $certificate->image);
+                Storage::disk('public')->delete($certificate->image);
             }
 
-            $certificate->image = str_replace('public/', '', $imagePath);
+            return $imagePath;
         }
+
+        return $certificate->image;
     }
 
     public function deleteCertificate($certificateId)
     {
-        $certificate = Certificate::find($certificateId);
+        $certificate = Certificate::findOrFail($certificateId);
 
         if ($certificate->image) {
             $this->deleteImage($certificate->image);
@@ -76,8 +78,7 @@ class CertificateService
     private function deleteImage($imagePath)
     {
         if ($imagePath) {
-            Storage::delete('public/' . $imagePath);
+            Storage::disk('public')->delete($imagePath);
         }
     }
-
 }

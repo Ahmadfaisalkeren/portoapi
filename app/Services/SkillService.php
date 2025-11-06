@@ -34,13 +34,13 @@ class SkillService
 
     public function updateSkill($skillId, array $skillData)
     {
-        $skill = Skill::find($skillId);
+        $skill = Skill::findOrFail($skillId);
 
-        $skill['skill'] = $skillData['skill'] ?? $skill->skill;
-        $skill['description'] = $skillData['description'] ?? $skill->description;
+        $skill->skill = $skillData['skill'] ?? $skill->skill;
+        $skill->description = $skillData['description'] ?? $skill->description;
 
         if (isset($skillData['image'])) {
-            $skillData['image'] = $this->updateImage($skill, $skillData['image']);
+            $skill->image = $this->updateImage($skill, $skillData['image']);
         }
 
         $skill->save();
@@ -55,16 +55,18 @@ class SkillService
             $imagePath = $image->storeAs('images/skills', $imageName, 'public');
 
             if ($skill->image) {
-                Storage::delete('public/' . $skill->image);
+                Storage::disk('public')->delete($skill->image);
             }
 
-            $skill->image = str_replace('public/', '', $imagePath);
+            return $imagePath;
         }
+
+        return $skill->image;
     }
 
     public function deleteSkill($skillId)
     {
-        $skill = Skill::find($skillId);
+        $skill = Skill::findOrFail($skillId);
 
         if ($skill->image) {
             $this->deleteImage($skill->image);
@@ -76,7 +78,7 @@ class SkillService
     private function deleteImage($imagePath)
     {
         if ($imagePath) {
-            Storage::delete('public/' . $imagePath);
+            Storage::disk('public')->delete($imagePath);
         }
     }
 }

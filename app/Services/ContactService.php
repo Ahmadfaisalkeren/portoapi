@@ -34,16 +34,16 @@ class ContactService
 
     public function updateContact($contactId, array $contactData)
     {
-        $contact = Contact::find($contactId);
+        $contact = Contact::findOrFail($contactId);
 
-        $contact['title'] = $contactData['title'] ?? $contact->title;
-        $contact['link'] = $contactData['link'] ?? $contact->link;
+        $contact->title = $contactData['title'] ?? $contact->title;
+        $contact->link = $contactData['link'] ?? $contact->link;
 
         if (isset($contactData['image'])) {
-            $contactData['image'] = $this->updateImage($contact, $contactData['image']);
+            $contact->image = $this->updateImage($contact, $contactData['image']);
         }
 
-        $contact->update($contactData);
+        $contact->save();
 
         return $contact;
     }
@@ -55,16 +55,18 @@ class ContactService
             $imagePath = $image->storeAs('images/contacts', $imageName, 'public');
 
             if ($contact->image) {
-                Storage::delete('public/' . $contact->image);
+                Storage::disk('public')->delete($contact->image);
             }
 
-            $contact->image = str_replace('public/', '', $imagePath);
+            return $imagePath;
         }
+
+        return $contact->image;
     }
 
     public function deleteContact($contactId)
     {
-        $contact = Contact::find($contactId);
+        $contact = Contact::findOrFail($contactId);
 
         if ($contact->image) {
             $this->deleteImage($contact->image);
@@ -76,7 +78,7 @@ class ContactService
     private function deleteImage($imagePath)
     {
         if ($imagePath) {
-            Storage::delete('public/' . $imagePath);
+            Storage::disk('public')->delete($imagePath);
         }
     }
 }
